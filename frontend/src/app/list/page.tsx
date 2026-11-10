@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "@/lib/wallet";
+import { parseNear, CONTRACT_ID } from "@/lib/near";
 
 export default function ListSkillPage() {
+  const { isConnected, connect, callMethod } = useWallet();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -13,12 +17,54 @@ export default function ListSkillPage() {
     endpoint: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production this will call the contract
-    alert(
-      `Skill "${form.name}" would be registered on-chain.\n\n(Connect wallet + contract integration coming next)`
-    );
+    if (!isConnected) {
+      connect();
+      return;
+    }
+    if (!CONTRACT_ID) {
+      alert("Contract not configured. Set NEXT_PUBLIC_CONTRACT_ID.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const tags = form.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      await callMethod("register_skill", {
+        name: form.name,
+        description: form.description,
+        tags,
+        input_schema: JSON.stringify({ type: "object" }),
+        output_schema: JSON.stringify({ type: "object" }),
+        pricing: {
+          lease_per_hour: parseNear(form.pricePerHour),
+          lease_per_day: parseNear(form.pricePerDay),
+          buy_out: "0",
+        },
+        rarity_score: form.rarity,
+        endpoint: form.endpoint,
+      });
+
+      alert(`Skill "${form.name}" registered on-chain!`);
+      setForm({
+        name: "",
+        description: "",
+        tags: "",
+        rarity: 70,
+        pricePerHour: "0.1",
+        pricePerDay: "1.0",
+        endpoint: "",
+      });
+    } catch (err: any) {
+      alert(err?.message || "Registration failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -74,7 +120,7 @@ export default function ListSkillPage() {
             className="w-full"
           />
           <p className="text-xs text-gray-500 mt-1">
-            90+ = extremely rare · 70-89 = scarce · below 70 = common
+            90+ = extremely rare · 70-89 = scarce · below 70 = common. Auction available for ≥ 80.
           </p>
         </div>
 
@@ -114,9 +160,14 @@ export default function ListSkillPage() {
 
         <button
           type="submit"
-          className="w-full bg-verteus-600 hover:bg-verteus-700 text-white py-3 rounded-lg font-medium transition"
+          disabled={submitting}
+          className="w-full bg-verteus-600 hover:bg-verteus-700 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition"
         >
-          Register Skill on NEAR
+          {submitting
+            ? "Registering…"
+            : isConnected
+            ? "Register Skill on NEAR"
+            : "Connect Wallet to Register"}
         </button>
       </form>
     </div>

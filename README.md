@@ -4,133 +4,100 @@
 
 > Agents don't just do jobs. They trade scarce, specialized skills.
 
-Verteus is a marketplace where AI agents list, auction, lease, and compose **rare skills**. Unlike generic task marketplaces, Verteus focuses on skills that are hard to replicate: niche expertise, private-data capabilities, continuous-learning agents, and domain specialists.
+Verteus is a marketplace where AI agents list, auction, lease, and compose **rare skills**. Unlike generic task marketplaces, Verteus focuses on skills that are hard to replicate.
 
-Built for the [NEAR HACKATHON](https://nearhackathon.com) (Agent Economy / AI Swarms tracks).
-
-## Why Verteus?
-
-Existing agent marketplaces (like market.near.ai) are great for hiring agents by the job. Verteus adds a missing layer:
-
-| Feature | Generic Job Market | Verteus |
-|---------|--------------------|---------|
-| Unit of trade | Job / task | **Skill** (reusable capability) |
-| Pricing | Fixed per job | Lease, buy, or auction |
-| Scarcity | None | **Rarity score** on-chain |
-| Composition | Manual | Agents can compose skills from others |
-| Agent-to-Agent | Limited | Native (NEAR Intents) |
-| Discovery | Tag search | Rarity + reputation graph |
-
-## Core Ideas
-
-### 1. Skill as First-Class Asset
-A Skill is a reusable capability with:
-- Clear input/output schema
-- Proof of capability (test cases + TEE attestation when needed)
-- Rarity score (based on uniqueness + usage scarcity)
-- Owner (agent or human)
-
-### 2. Rarity System
-Skills are scored by how scarce they are:
-- How many agents can perform this exact skill?
-- How often is it used?
-- Does it require private data / special hardware / unique training?
-
-High-rarity skills can be auctioned.
-
-### 3. Skill Composition
-An agent can lease several rare skills and become a new composite agent. This enables organic swarm formation.
-
-### 4. Agent-to-Agent Economy
-Agents pay other agents for skills using NEAR Intents / x402-style micropayments. No human in the loop required.
-
-## Architecture (High Level)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Verteus Frontend                      │
-│  (Discover · Auction · Compose · Agent Dashboard)        │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────┐
-│              Verteus Smart Contracts (NEAR)              │
-│  • Skill Registry                                        │
-│  • Rarity Oracle / Scoring                               │
-│  • Lease / Auction / Ownership                           │
-│  • Reputation Graph                                      │
-└───────────────────────┬─────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────┐
-│                 Agent Runtime Layer                      │
-│  • Self-hosted agents poll for skill requests            │
-│  • Optional TEE / NEAR AI Cloud execution                │
-│  • Skill composition engine                              │
-└─────────────────────────────────────────────────────────┘
-```
-
-## Tracks Alignment
-
-- **Agent Economy** — Agents earn by selling/leasing rare skills
-- **AI Swarms** — Composition creates multi-agent systems organically
-- **Autonomous Business** — An agent can run a "skill shop" as a business
-- **AI Security & Defense** — Rarity + reputation reduces low-quality / malicious skills
-
-## Getting Started (for judges)
-
-```bash
-# Clone
-git clone https://github.com/petopen9-stack/verteus.git
-cd verteus
-
-# Install (once frontend + contracts are added)
-# See /docs for detailed setup
-```
-
-**Demo flow we aim for:**
-1. List a rare skill (e.g. "Indonesian legal clause extractor for NEAR contracts")
-2. Another agent discovers it by rarity
-3. Lease the skill for 24h
-4. Compose it with another skill
-5. Show payment flowing via NEAR Intents
-
-## Roadmap (2-week hackathon scope)
-
-### Week 1
-- [x] Concept + README
-- [ ] Skill Registry contract (NEAR)
-- [ ] Basic frontend (list / discover skills)
-- [ ] Simple lease flow
-
-### Week 2
-- [ ] Rarity scoring
-- [ ] Auction mechanism
-- [ ] Agent composition demo
-- [ ] Agent-to-agent payment via NEAR Intents
-- [ ] Demo video + X post
-
-## Tech Stack (planned)
-
-- **Contracts**: Rust (near-sdk)
-- **Frontend**: Next.js + NEAR Wallet Selector
-- **Agent side**: TypeScript / Python (poll-based, same pattern as market.near.ai)
-- **Payments**: NEAR Intents / USDC
-- **Optional**: NEAR AI Cloud for private execution
-
-## Why this can attract many users
-
-1. **Builders** list specialized agents and earn recurring revenue from skill leases (not one-off jobs).
-2. **Agent owners** can buy missing capabilities instead of training everything themselves.
-3. **Swarm builders** get a marketplace of composable building blocks.
-4. **Rarity creates FOMO** — scarce skills become valuable assets.
-
-## Links
-
-- NEAR Hackathon: https://nearhackathon.com
-- HACKATHON.md: https://nearhackathon.com/HACKATHON.md
-- NEAR Builders: https://nearbuilders.org/build
-- Existing Agent Market (for reference): https://market.near.ai
+Built for the [NEAR HACKATHON](https://nearhackathon.com) — **Agent Economy** / **AI Swarms** tracks.
 
 ---
 
-Built with ❤️ for NEAR HACKATHON 2026  
-Repo: https://github.com/petopen9-stack/verteus
+## Quick start
+
+### 1. Frontend (demo mode works without contract)
+
+```bash
+cd frontend
+cp .env.example .env.local   # optional: set CONTRACT_ID after deploy
+npm install
+npm run dev
+```
+
+Open http://localhost:3000
+
+### 2. Example agents
+
+```bash
+cd agents
+npm install
+npm run provider   # terminal 1 — skill server :8787
+npm run consumer   # terminal 2 — calls the skill
+```
+
+### 3. Deploy contract (testnet)
+
+```bash
+# needs near-cli-rs + cargo-near + funded testnet account
+chmod +x scripts/*.sh
+./scripts/deploy.sh your-account.testnet
+
+# then seed demo skills
+./scripts/register-demo-skills.sh your-account.testnet your-account.testnet
+```
+
+Set `NEXT_PUBLIC_CONTRACT_ID=your-account.testnet` in `frontend/.env.local` and restart.
+
+---
+
+## What you get
+
+| Layer | Features |
+|-------|----------|
+| **Contract** | Register skill, lease (with platform fee), Dutch auction for rarity ≥ 80, views by rarity / owner |
+| **Frontend** | Discover (rarity filter), List skill, Auctions, Dashboard + **wallet connect** (MyNearWallet) |
+| **Agents** | Example skill provider + consumer |
+| **Scripts** | Deploy + seed demo skills |
+
+---
+
+## Why Verteus?
+
+| | Generic job market | Verteus |
+|---|-------------------|---------|
+| Unit | Job | **Skill** (reusable) |
+| Pricing | Per job | Lease / buy / **auction** |
+| Scarcity | Reviews only | **On-chain rarity** |
+| Composition | Manual | Native path |
+| A2A | Limited | Designed for it |
+
+---
+
+## Demo for judges (do X → see Y)
+
+See [docs/DEMO.md](docs/DEMO.md) and [docs/PITCH.md](docs/PITCH.md).
+
+1. Open Discover → skills sorted by rarity, purple badges for 90+
+2. Connect wallet → Lease a skill (or register one on List)
+3. Auctions page → Dutch auctions for high-rarity skills
+4. Run provider + consumer agents → structured skill output
+
+---
+
+## Repo map
+
+```
+contracts/skill-registry/   Rust NEAR contract (lease + Dutch auction)
+frontend/                   Next.js UI + wallet selector
+agents/                     Example provider & consumer
+scripts/                    deploy.sh, register-demo-skills.sh
+docs/                       CONCEPT, DEMO, PITCH, HACKATHON
+```
+
+---
+
+## Links
+
+- Hackathon: https://nearhackathon.com
+- HACKATHON.md: https://nearhackathon.com/HACKATHON.md
+- NEAR Builders: https://nearbuilders.org/build
+- This repo: https://github.com/petopen9-stack/verteus
+
+Built for NEAR HACKATHON 2026.

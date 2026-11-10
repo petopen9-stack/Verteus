@@ -6,15 +6,15 @@ use near_sdk::{
     env, near, AccountId, NearToken, PanicOnDefault, Promise,
 };
 
+mod auction;
+use auction::Auction;
+
 /// Pricing model for a skill
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Pricing {
-    /// Price to lease for 1 hour (in yoctoNEAR). 0 = not available
     pub lease_per_hour: U128,
-    /// Price to lease for 24 hours
     pub lease_per_day: U128,
-    /// One-time buy-out price (permanent ownership transfer). 0 = not for sale
     pub buy_out: U128,
 }
 
@@ -27,14 +27,13 @@ pub struct Skill {
     pub description: String,
     pub owner: AccountId,
     pub tags: Vec<String>,
-    pub input_schema: String,   // JSON Schema as string
+    pub input_schema: String,
     pub output_schema: String,
     pub pricing: Pricing,
-    /// 0-100. Higher = rarer / more valuable
     pub rarity_score: u8,
     pub usage_count: u64,
     pub created_at: u64,
-    pub endpoint: String,       // off-chain endpoint the agent listens on
+    pub endpoint: String,
     pub active: bool,
 }
 
@@ -44,7 +43,7 @@ pub struct Skill {
 pub struct Lease {
     pub skill_id: u64,
     pub lessee: AccountId,
-    pub expires_at: u64,        // timestamp in ns
+    pub expires_at: u64,
     pub paid: U128,
 }
 
@@ -54,10 +53,11 @@ pub struct Contract {
     pub owner: AccountId,
     pub skills: UnorderedMap<u64, Skill>,
     pub next_skill_id: u64,
-    /// skill_id -> list of active leases
     pub leases: LookupMap<u64, Vector<Lease>>,
-    /// Platform fee in basis points (e.g. 250 = 2.5%)
     pub platform_fee_bps: u16,
+    /// Dutch auctions for high-rarity skills
+    pub auctions: UnorderedMap<u64, Auction>,
+    pub next_auction_id: u64,
 }
 
 #[near]
@@ -71,6 +71,8 @@ impl Contract {
             next_skill_id: 1,
             leases: LookupMap::new(b"l"),
             platform_fee_bps,
+            auctions: UnorderedMap::new(b"a"),
+            next_auction_id: 1,
         }
     }
 
@@ -78,7 +80,6 @@ impl Contract {
     // Skill management
     // ─────────────────────────────────────────────
 
-    /// Register a new skill. Returns the skill id.
     pub fn register_skill(
         &mut self,
         name: String,
@@ -117,7 +118,6 @@ impl Contract {
         id
     }
 
-    /// Update pricing / rarity / endpoint (owner only)
     pub fn update_skill(
         &mut self,
         skill_id: u64,
@@ -149,7 +149,6 @@ impl Contract {
     // Leasing
     // ─────────────────────────────────────────────
 
-    /// Lease a skill for a number of hours. Attached deposit must cover the price.
     #[payable]
     pub fn lease_skill(&mut self, skill_id: u64, hours: u64) -> Lease {
         let mut skill = self.skills.get(&skill_id).expect("Skill not found");
@@ -163,16 +162,12 @@ impl Contract {
         let attached = env::attached_deposit().as_yoctonear();
         assert!(attached >= total, "Insufficient deposit");
 
-        // Platform fee
         let fee = total * self.platform_fee_bps as u128 / 10_000;
         let to_owner = total - fee;
 
-        // Pay the skill owner
         Promise::new(skill.owner.clone()).transfer(NearToken::from_yoctonear(to_owner));
 
-        // Fee stays in contract (can be withdrawn by platform owner later)
-
-        let expires_at = env::block_timestamp() + hours * 3_600_000_000_000; // ns
+        let expires_at = env::block_timestamp() + hours * 3_600_000_000_000;
 
         let lease = Lease {
             skill_id,
@@ -181,14 +176,12 @@ impl Contract {
             paid: U128(total),
         };
 
-        // Store lease
         let mut leases = self.leases.get(&skill_id).unwrap_or_else(|| {
             Vector::new(format!("leases-{}", skill_id).as_bytes())
         });
         leases.push(&lease);
         self.leases.insert(&skill_id, &leases);
 
-        // Update usage
         skill.usage_count += 1;
         self.skills.insert(&skill_id, &skill);
 
@@ -200,7 +193,6 @@ impl Contract {
         lease
     }
 
-    /// Check whether an account currently holds a valid lease on a skill
     pub fn has_valid_lease(&self, skill_id: u64, account: AccountId) -> bool {
         let Some(leases) = self.leases.get(&skill_id) else {
             return false;
@@ -214,6 +206,99 @@ impl Contract {
             }
         }
         false
+    }
+
+    // ─────────────────────────────────────────────
+    // Dutch Auction (for rarity >= 80 skills)
+    // ─────────────────────────────────────────────
+
+    /// Start a Dutch auction for a skill you own
+    pub fn start_auction(
+        &mut self,
+        skill_id: u64,
+        start_price: U128,
+        end_price: U128,
+        duration_hours: u64,
+    ) -> u64 {
+        let skill = self.skills.get(&skill_id).expect("Skill not found");
+        assert_eq!(skill.owner, env::predecessor_account_id(), "Only owner");
+        assert!(skill.rarity_score >= 80, "Auction only for rarity >= 80");
+        assert!(start_price.0 > end_price.0, "Start must be > end");
+        assert!(duration_hours >= 1 && duration_hours <= 168, "1-168 hours");
+
+        let id = self.next_auction_id;
+        self.next_auction_id += 1;
+
+        let now = env::block_timestamp();
+        let auction = Auction {
+            skill_id,
+            seller: env::predecessor_account_id(),
+            start_price,
+            end_price,
+            start_time: now,
+            end_time: now + duration_hours * 3_600_000_000_000,
+            winner: None,
+            final_price: None,
+            settled: false,
+        };
+
+        self.auctions.insert(&id, &auction);
+        env::log_str(&format!("Auction #{} started for skill #{}", id, skill_id));
+        id
+    }
+
+    /// Buy now at the current Dutch price
+    #[payable]
+    pub fn buy_auction(&mut self, auction_id: u64) {
+        let mut auction = self.auctions.get(&auction_id).expect("Auction not found");
+        assert!(auction.is_active(), "Auction not active");
+
+        let price = auction.current_price();
+        let attached = env::attached_deposit().as_yoctonear();
+        assert!(attached >= price, "Insufficient deposit");
+
+        let fee = price * self.platform_fee_bps as u128 / 10_000;
+        let to_seller = price - fee;
+
+        Promise::new(auction.seller.clone()).transfer(NearToken::from_yoctonear(to_seller));
+
+        // Transfer skill ownership
+        let mut skill = self.skills.get(&auction.skill_id).expect("Skill missing");
+        skill.owner = env::predecessor_account_id();
+        self.skills.insert(&auction.skill_id, &skill);
+
+        auction.winner = Some(env::predecessor_account_id());
+        auction.final_price = Some(U128(price));
+        auction.settled = true;
+        self.auctions.insert(&auction_id, &auction);
+
+        env::log_str(&format!(
+            "Auction #{} won by {} at {}",
+            auction_id,
+            env::predecessor_account_id(),
+            price
+        ));
+    }
+
+    pub fn get_auction(&self, auction_id: u64) -> Option<Auction> {
+        self.auctions.get(&auction_id)
+    }
+
+    pub fn get_auction_price(&self, auction_id: u64) -> Option<U128> {
+        self.auctions.get(&auction_id).map(|a| U128(a.current_price()))
+    }
+
+    pub fn get_active_auctions(&self, limit: u64) -> Vec<(u64, Auction)> {
+        let mut result = Vec::new();
+        for (id, auction) in self.auctions.iter() {
+            if auction.is_active() {
+                result.push((id, auction));
+                if result.len() as u64 >= limit {
+                    break;
+                }
+            }
+        }
+        result
     }
 
     // ─────────────────────────────────────────────
@@ -234,7 +319,6 @@ impl Contract {
                 }
             }
         }
-        // Sort by rarity descending (simple bubble for small sets)
         result.sort_by(|a, b| b.rarity_score.cmp(&a.rarity_score));
         result
     }
@@ -250,5 +334,13 @@ impl Contract {
 
     pub fn skill_count(&self) -> u64 {
         self.skills.len()
+    }
+
+    pub fn get_skills_by_owner(&self, owner: AccountId) -> Vec<Skill> {
+        self.skills
+            .iter()
+            .filter(|(_, s)| s.owner == owner)
+            .map(|(_, s)| s)
+            .collect()
     }
 }
