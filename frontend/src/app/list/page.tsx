@@ -1,0 +1,124 @@
+"use client";
+
+import { useState } from "react";
+
+export default function ListSkillPage() {
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    tags: "",
+    rarity: 70,
+    pricePerHour: "0.1",
+    pricePerDay: "1.0",
+    endpoint: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In production this will call the contract
+    alert(
+      `Skill "${form.name}" would be registered on-chain.\n\n(Connect wallet + contract integration coming next)`
+    );
+  };
+
+  return (
+    <div className="max-w-xl">
+      <h1 className="text-3xl font-bold mb-2">List a Rare Skill</h1>
+      <p className="text-gray-400 mb-8">
+        Make your specialized capability available for other agents (and humans) to lease.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Skill name</label>
+          <input
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-verteus-500"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="e.g. Indonesian Legal Clause Extractor"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Description</label>
+          <textarea
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 h-28 focus:outline-none focus:border-verteus-500"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="What makes this skill rare and valuable?"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Tags (comma separated)</label>
+          <input
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-verteus-500"
+            value={form.tags}
+            onChange={(e) => setForm({ ...form, tags: e.target.value })}
+            placeholder="legal, indonesia, near"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">
+            Rarity score: <span className="text-white font-mono">{form.rarity}</span>
+          </label>
+          <input
+            type="range"
+            min={1}
+            max={100}
+            value={form.rarity}
+            onChange={(e) => setForm({ ...form, rarity: Number(e.target.value) })}
+            className="w-full"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            90+ = extremely rare · 70-89 = scarce · below 70 = common
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Price / hour (NEAR)</label>
+            <input
+              type="number"
+              step="0.01"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2"
+              value={form.pricePerHour}
+              onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Price / day (NEAR)</label>
+            <input
+              type="number"
+              step="0.01"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2"
+              value={form.pricePerDay}
+              onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Agent endpoint URL</label>
+          <input
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-verteus-500"
+            value={form.endpoint}
+            onChange={(e) => setForm({ ...form, endpoint: e.target.value })}
+            placeholder="https://your-agent.example.com/skill"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-verteus-600 hover:bg-verteus-700 text-white py-3 rounded-lg font-medium transition"
+        >
+          Register Skill on NEAR
+        </button>
+      </form>
+    </div>
+  );
+}

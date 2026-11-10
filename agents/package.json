@@ -1,0 +1,14 @@
+{
+  "name": "verteus-agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "provider": "tsx example-skill-provider/index.ts",
+    "consumer": "tsx example-skill-consumer/index.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5"
+  }
+}
