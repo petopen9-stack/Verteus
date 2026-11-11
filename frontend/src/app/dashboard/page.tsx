@@ -8,6 +8,7 @@ interface Skill {
   id: number;
   name: string;
   rarity_score: number;
+  success_rate: number;
   usage_count: number;
   active: boolean;
   pricing: { lease_per_day: string };
@@ -83,7 +84,7 @@ export default function DashboardPage() {
               <div>
                 <div className="font-medium">{s.name}</div>
                 <div className="text-xs text-gray-500">
-                  Rarity {s.rarity_score} · {s.usage_count} leases ·{" "}
+                  Rarity {s.rarity_score} · {s.success_rate}% success · {s.usage_count} leases ·{" "}
                   {formatNear(s.pricing.lease_per_day)} NEAR/day
                 </div>
               </div>

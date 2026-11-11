@@ -11,6 +11,7 @@ Proyek ini berfokus pada track **Agent Economy (`agents`)**. Integrasi nyata saa
 ## Fitur
 
 - **Kontrak NEAR:** pendaftaran skill, harga sewa, quote on-chain, lease dengan pembagian biaya, pemeriksaan lease, Dutch auction, dan kontrol ownership.
+- **Pricing berbasis performa:** harga lease harian deterministik 0,5–9 NEAR, dengan bobot 55% success rate dan 45% rarity; kontrak memvalidasi harga agar UI dan on-chain konsisten.
 - **Web app Next.js:** temukan skill, daftar skill, lease dengan persetujuan wallet, lihat auction, dan dashboard pemilik.
 - **CLI + MCP stdio:** agent dapat mencari skill, membaca detail, melihat auction, mengecek lease, dan menyiapkan instruksi lease berdasarkan quote kontrak.
 - **Contoh provider/consumer:** demonstrasi lokal sederhana untuk keluaran skill terstruktur.

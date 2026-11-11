@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWallet } from "@/lib/wallet";
-import { parseNear, CONTRACT_ID } from "@/lib/near";
+import { formatNear, recommendedDailyPrice, CONTRACT_ID } from "@/lib/near";
 
 const REGISTRATION_STORAGE_BUFFER = "1000000000000000000000000";
 
@@ -14,10 +14,12 @@ export default function ListSkillPage() {
     description: "",
     tags: "",
     rarity: 70,
-    pricePerHour: "0.1",
-    pricePerDay: "1.0",
+    successRate: 80,
     endpoint: "",
   });
+
+  const dailyPriceYocto = recommendedDailyPrice(form.successRate, form.rarity);
+  const hourlyPriceYocto = (BigInt(dailyPriceYocto) / BigInt(24)).toString();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +45,13 @@ export default function ListSkillPage() {
         tags,
         input_schema: JSON.stringify({ type: "object" }),
         output_schema: JSON.stringify({ type: "object" }),
-        pricing: {
-          lease_per_hour: parseNear(form.pricePerHour),
-          lease_per_day: parseNear(form.pricePerDay),
-          buy_out: "0",
-        },
-        rarity_score: form.rarity,
+          pricing: {
+            lease_per_hour: hourlyPriceYocto,
+            lease_per_day: dailyPriceYocto,
+            buy_out: "0",
+          },
+          rarity_score: form.rarity,
+          success_rate: form.successRate,
         endpoint: form.endpoint,
       }, REGISTRATION_STORAGE_BUFFER);
 
@@ -58,8 +61,7 @@ export default function ListSkillPage() {
         description: "",
         tags: "",
         rarity: 70,
-        pricePerHour: "0.1",
-        pricePerDay: "1.0",
+        successRate: 80,
         endpoint: "",
       });
     } catch (err: any) {
@@ -129,27 +131,29 @@ export default function ListSkillPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Price / hour (NEAR)</label>
-            <input
-              type="number"
-              step="0.01"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2"
-              value={form.pricePerHour}
-              onChange={(e) => setForm({ ...form, pricePerHour: e.target.value })}
-            />
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">
+            Success rate: <span className="text-white font-mono">{form.successRate}%</span>
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={form.successRate}
+            onChange={(e) => setForm({ ...form, successRate: Number(e.target.value) })}
+            className="w-full"
+          />
+          <p className="text-xs text-gray-500 mt-1">Use verified evaluation results where possible.</p>
+        </div>
+
+        <div className="rounded-xl border border-verteus-800 bg-verteus-950/30 p-4">
+          <div className="flex justify-between items-baseline">
+            <span className="text-sm text-gray-400">Automatic daily lease price</span>
+            <span className="text-2xl font-semibold text-verteus-400">{formatNear(dailyPriceYocto)} NEAR</span>
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Price / day (NEAR)</label>
-            <input
-              type="number"
-              step="0.01"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2"
-              value={form.pricePerDay}
-              onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })}
-            />
-          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Range 0.5–9 NEAR · 55% success rate + 45% rarity. Hourly rate is derived from the daily price.
+          </p>
         </div>
 
         <div>

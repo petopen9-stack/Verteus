@@ -14,6 +14,9 @@ const MAX_TAG_BYTES: usize = 64;
 const MAX_SCHEMA_BYTES: usize = 8_192;
 const MAX_ENDPOINT_BYTES: usize = 2_048;
 const NANOS_PER_HOUR: u64 = 3_600_000_000_000;
+const YOCTO_PER_NEAR: u128 = 1_000_000_000_000_000_000_000_000;
+const MIN_DAILY_PRICE: u128 = YOCTO_PER_NEAR / 2;
+const MAX_DAILY_PRICE: u128 = YOCTO_PER_NEAR * 9;
 
 /// Pricing model for a skill
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
@@ -37,6 +40,7 @@ pub struct Skill {
     pub output_schema: String,
     pub pricing: Pricing,
     pub rarity_score: u8,
+    pub success_rate: u8,
     pub usage_count: u64,
     pub created_at: u64,
     pub endpoint: String,
@@ -100,9 +104,11 @@ impl Contract {
         output_schema: String,
         pricing: Pricing,
         rarity_score: u8,
+        success_rate: u8,
         endpoint: String,
     ) -> u64 {
         assert!(rarity_score <= 100, "Rarity must be 0-100");
+        assert!(success_rate <= 100, "Success rate must be 0-100");
         Self::validate_metadata(
             &name,
             &description,
@@ -110,6 +116,11 @@ impl Contract {
             &input_schema,
             &output_schema,
             &endpoint,
+        );
+        assert_eq!(
+            pricing.lease_per_day.0,
+            Self::recommended_daily_price(success_rate, rarity_score).0,
+            "Daily price must match the success/rarity pricing formula"
         );
         let storage_before = env::storage_usage();
         let attached_deposit = env::attached_deposit().as_yoctonear();
@@ -127,6 +138,7 @@ impl Contract {
             output_schema,
             pricing,
             rarity_score,
+            success_rate,
             usage_count: 0,
             created_at: env::block_timestamp(),
             endpoint,
@@ -193,6 +205,7 @@ impl Contract {
         skill_id: u64,
         pricing: Option<Pricing>,
         rarity_score: Option<u8>,
+        success_rate: Option<u8>,
         endpoint: Option<String>,
         active: Option<bool>,
     ) {
@@ -206,6 +219,10 @@ impl Contract {
             assert!(r <= 100, "Rarity must be 0-100");
             skill.rarity_score = r;
         }
+        if let Some(s) = success_rate {
+            assert!(s <= 100, "Success rate must be 0-100");
+            skill.success_rate = s;
+        }
         if let Some(e) = endpoint {
             assert!(e.len() <= MAX_ENDPOINT_BYTES, "Endpoint too long");
             skill.endpoint = e;
@@ -213,6 +230,11 @@ impl Contract {
         if let Some(a) = active {
             skill.active = a;
         }
+        assert_eq!(
+            skill.pricing.lease_per_day.0,
+            Self::recommended_daily_price(skill.success_rate, skill.rarity_score).0,
+            "Daily price must match the success/rarity pricing formula"
+        );
         self.skills.insert(&skill_id, &skill);
     }
 
@@ -253,6 +275,16 @@ impl Contract {
         let whole = (amount / 10_000).checked_mul(bps).expect("Fee overflow");
         let fractional = (amount % 10_000).checked_mul(bps).expect("Fee overflow") / 10_000;
         whole.checked_add(fractional).expect("Fee overflow")
+    }
+
+    /// Suggested daily lease price: 0.5–9 NEAR, weighted 55% by success and
+    /// 45% by rarity. The integer calculation is deterministic on-chain.
+    pub fn recommended_daily_price(success_rate: u8, rarity_score: u8) -> U128 {
+        assert!(success_rate <= 100, "Success rate must be 0-100");
+        assert!(rarity_score <= 100, "Rarity must be 0-100");
+        let weighted_score = (success_rate as u128) * 55 + (rarity_score as u128) * 45;
+        let range = MAX_DAILY_PRICE - MIN_DAILY_PRICE;
+        U128(MIN_DAILY_PRICE + (range * weighted_score / 10_000))
     }
 
     pub fn quote_lease_cost(&self, skill_id: u64, hours: u64) -> U128 {
@@ -542,6 +574,7 @@ mod tests {
                 buy_out: U128(0),
             },
             rarity_score: 0,
+            success_rate: 0,
             usage_count: 0,
             created_at: 0,
             endpoint: String::new(),
@@ -597,10 +630,11 @@ mod tests {
             "{}".to_string(),
             Pricing {
                 lease_per_hour: U128(1),
-                lease_per_day: U128(24),
+                lease_per_day: Contract::recommended_daily_price(75, 50),
                 buy_out: U128(0),
             },
             50,
+            75,
             "https://example.com/skill".to_string(),
         );
         contract
@@ -610,6 +644,13 @@ mod tests {
     fn registration_accepts_storage_buffer_and_records_skill() {
         let contract = register_with_storage_deposit(1_000_000_000_000_000_000_000_000);
         assert_eq!(contract.skill_count(), 1);
+    }
+
+    #[test]
+    fn recommended_price_is_bounded_and_weighted() {
+        assert_eq!(Contract::recommended_daily_price(0, 0).0, MIN_DAILY_PRICE);
+        assert_eq!(Contract::recommended_daily_price(100, 100).0, MAX_DAILY_PRICE);
+        assert!(Contract::recommended_daily_price(90, 85).0 > Contract::recommended_daily_price(50, 20).0);
     }
 
     #[test]

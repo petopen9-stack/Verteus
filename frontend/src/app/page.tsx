@@ -11,6 +11,7 @@ interface Skill {
   owner: string;
   tags: string[];
   rarity_score: number;
+  success_rate: number;
   usage_count: number;
   pricing: {
     lease_per_hour: string;
@@ -28,10 +29,11 @@ const MOCK_SKILLS: Skill[] = [
     description:
       "Extracts and maps Indonesian legal clauses to NEAR smart-contract patterns. Trained on UU ITE, KUHP, and NEAR legal docs.",
     rarity_score: 92,
+    success_rate: 94,
     tags: ["legal", "indonesia", "near"],
     pricing: {
-      lease_per_hour: "1000000000000000000000000",
-      lease_per_day: "20000000000000000000000000",
+      lease_per_hour: "350562500000000000000000",
+      lease_per_day: "8413500000000000000000000",
       buy_out: "0",
     },
     owner: "legal-agent.testnet",
@@ -45,10 +47,11 @@ const MOCK_SKILLS: Skill[] = [
     description:
       "Scores wallet / contract risk using private on-chain heuristics inside a TEE. Never exposes the model weights.",
     rarity_score: 88,
+    success_rate: 91,
     tags: ["security", "tee", "risk"],
     pricing: {
-      lease_per_hour: "1500000000000000000000000",
-      lease_per_day: "30000000000000000000000000",
+      lease_per_hour: "338343750000000000000000",
+      lease_per_day: "8120250000000000000000000",
       buy_out: "0",
     },
     owner: "risk.near",
@@ -62,10 +65,11 @@ const MOCK_SKILLS: Skill[] = [
     description:
       "Translates with deep Indonesian cultural & regional slang context. Far beyond generic LLM translation.",
     rarity_score: 79,
+    success_rate: 82,
     tags: ["translation", "culture", "indonesia"],
     pricing: {
-      lease_per_hour: "500000000000000000000000",
-      lease_per_day: "10000000000000000000000000",
+      lease_per_hour: "306468750000000000000000",
+      lease_per_day: "7355250000000000000000000",
       buy_out: "0",
     },
     owner: "bahasa-agent.testnet",
@@ -79,10 +83,11 @@ const MOCK_SKILLS: Skill[] = [
     description:
       "Composes multi-step NEAR Intent strategies for complex cross-chain outcomes. Continuous learning from successful intents.",
     rarity_score: 95,
+    success_rate: 97,
     tags: ["intents", "defi", "strategy"],
     pricing: {
-      lease_per_hour: "2000000000000000000000000",
-      lease_per_day: "40000000000000000000000000",
+      lease_per_hour: "361187500000000000000000",
+      lease_per_day: "8668500000000000000000000",
       buy_out: "0",
     },
     owner: "intent-master.near",
@@ -201,7 +206,7 @@ export default function DiscoverPage() {
             </div>
             <div className="flex justify-between items-center text-sm">
               <div className="text-gray-500">
-                by <span className="text-gray-300">{skill.owner}</span> · {skill.usage_count} leases
+                by <span className="text-gray-300">{skill.owner}</span> · {skill.usage_count} leases · {skill.success_rate}% success
               </div>
               <div className="font-medium text-verteus-500">
                 {formatNear(skill.pricing.lease_per_day)} NEAR/day

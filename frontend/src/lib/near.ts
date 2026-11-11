@@ -55,10 +55,24 @@ export function formatNear(yocto: string): string {
   const whole = value / BigInt("1000000000000000000000000");
   const fraction = (value % BigInt("1000000000000000000000000")).toString().padStart(24, "0");
   if (whole === BigInt(0)) {
-    const first = fraction.search(/[1-9]/);
-    if (first === -1) return "0.00";
-    const significant = fraction.slice(first, first + 2).padEnd(2, "0");
-    return `${significant[0]}.${significant[1]}e-${first + 1}`;
+    const cents = (value * BigInt(100)) / BigInt("1000000000000000000000000");
+    return `0.${cents.toString().padStart(2, "0")}`;
   }
   return `${whole}.${fraction.slice(0, 2)}`;
+}
+
+const YOCTO_PER_NEAR = BigInt("1000000000000000000000000");
+const MIN_DAILY_PRICE = YOCTO_PER_NEAR / BigInt(2);
+const MAX_DAILY_PRICE = YOCTO_PER_NEAR * BigInt(9);
+
+export function recommendedDailyPrice(successRate: number, rarityScore: number): string {
+  if (!Number.isInteger(successRate) || successRate < 0 || successRate > 100) {
+    throw new Error("Success rate must be between 0 and 100");
+  }
+  if (!Number.isInteger(rarityScore) || rarityScore < 0 || rarityScore > 100) {
+    throw new Error("Rarity must be between 0 and 100");
+  }
+  const weightedScore = BigInt(successRate * 55 + rarityScore * 45);
+  const range = MAX_DAILY_PRICE - MIN_DAILY_PRICE;
+  return (MIN_DAILY_PRICE + (range * weightedScore) / BigInt(10000)).toString();
 }

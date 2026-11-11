@@ -4,7 +4,8 @@ Kontrak NEAR yang menyimpan metadata skill dan mengatur lease serta Dutch auctio
 
 ## Method utama
 
-- `register_skill` — mendaftarkan skill; metadata dibatasi ukuran dan rarity input pemilik dibatasi 0–100. Membutuhkan storage deposit berdasarkan pertumbuhan byte aktual; surplus dikembalikan.
+- `register_skill` — mendaftarkan skill; metadata, rarity, dan success rate input pemilik dibatasi 0–100. Harga harian dihitung deterministik dari 55% success rate + 45% rarity dan dibatasi 0,5–9 NEAR. Membutuhkan storage deposit berdasarkan pertumbuhan byte aktual; surplus dikembalikan.
+- `recommended_daily_price(success_rate, rarity_score)` — mengembalikan harga harian yang harus dipakai saat registrasi atau pembaruan skill.
 - `update_skill` — pemilik mengubah harga, rarity, endpoint, atau status aktif.
 - `quote_lease_cost(skill_id, hours)` — view quote biaya dalam yoctoNEAR. Setiap 24 jam penuh menggunakan `lease_per_day`; jam sisa menggunakan `lease_per_hour`. Jika daily rate tidak diisi, 24 jam dihargai sebagai 24 kali hourly rate.
 - `lease_skill(skill_id, hours)` — menerima **deposit tepat sebesar quote**, membuat/menambah masa lease akun, mentransfer bagian provider, fee platform ke owner kontrak, dan menambah usage counter.
@@ -54,6 +55,7 @@ near contract call-function as-transaction <contract> register_skill \
       "buy_out":"0"
     },
     "rarity_score":87,
+    "success_rate":92,
     "endpoint":"https://my-agent.example.com/skill"
   }' \
   prepaid-gas '30.0 Tgas' \
