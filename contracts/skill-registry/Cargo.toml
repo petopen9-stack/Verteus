@@ -8,13 +8,14 @@ authors = ["Verteus Team"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "5.5"
+borsh = "1.5"
+near-sdk = { version = "5.5", features = ["legacy"] }
 
 [dev-dependencies]
-near-sdk = { version = "5.5", features = ["unit-testing"] }
+near-sdk = { version = "5.5", features = ["legacy", "unit-testing"] }
 
 [profile.release]
-coding = true
+codegen-units = 1
 lto = true
 opt-level = "z"
 overflow-checks = true

@@ -1,84 +1,39 @@
-# Verteus Concept Deep Dive
+# Verteus — konsep dan batas implementasi
 
-## Problem
+## Masalah
 
-Current AI agent marketplaces treat agents as black-box workers for one-off jobs. This has limits:
+Provider memiliki kemampuan spesialis, sementara agent lain perlu menemukannya, memahami harga, dan membayar provider tanpa sebuah broker pusat mengontrol seluruh transaksi. Pasar pekerjaan satu kali tidak selalu memodelkan akses berulang ke kemampuan yang sama.
 
-- No reuse of specialized capability
-- No scarcity / differentiation beyond reviews
-- Hard for agents to improve by buying better sub-skills
-- Weak incentives for building truly rare expertise
+## Unit produk: skill
 
-## Solution: Skill as the Unit of Value
+Kontrak menyimpan skill dengan ID, nama/deskripsi, owner NEAR, tags, skema input/output, pricing, rarity score (0–100), endpoint, usage counter, waktu pembuatan, dan status aktif. Endpoint, nama, deskripsi, tags, dan schema memiliki batas panjang.
 
-In Verteus, the primary asset is a **Skill**:
+Catatan penting: struct konsep ini tidak berarti seluruh kemungkinan field sudah ada. Field `proof`, test-case hash, dan TEE attestation **belum** disediakan kontrak. Rarity score saat ini diisi sendiri oleh owner—bukan reputasi terverifikasi.
 
-```ts
-interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  inputSchema: JSONSchema;
-  outputSchema: JSONSchema;
-  owner: AccountId;          // agent or human
-  rarityScore: number;       // 0-100
-  pricing: {
-    leasePerHour?: number;
-    leasePerDay?: number;
-    buyOut?: number;
-  };
-  proof: {
-    testCasesHash: string;
-    teeAttestation?: string;
-  };
-  tags: string[];
-  usageCount: number;
-}
-```
+## Implementasi sekarang
 
-## Rarity Scoring (initial formula)
+- Registry dan katalog skill on-chain.
+- Lease 1–720 jam; harga total dikutip oleh `quote_lease_cost`; kontrak menerima deposit tepat, membagi pembayaran, memperpanjang expiry, dan memungkinkan view `has_valid_lease`.
+- Dutch auction per skill ber-rarity ≥80.
+- Web app Next.js dengan koneksi wallet NEAR.
+- CLI dan MCP tools untuk baca registry/auction/lease dan menyiapkan parameter transaksi tanpa signing.
 
-rarity = f(
-  uniqueness,          // how many other skills are similar
-  demand / supply,     // usage vs number of providers
-  proofStrength,       // TEE / verified tests
-  domainDifficulty     // subjective + community signal
-)
+## Arah scoring rarity (belum diterapkan)
 
-High rarity skills appear in a special "Rare" section and can be put up for auction.
+Rarity terverifikasi kelak bisa mempertimbangkan uniqueness, demand/supply, hasil pengujian yang dapat direproduksi, dan kesulitan domain. Sampai oracle/review independen tersedia, skor tidak boleh ditafsirkan sebagai bukti kualitas atau kelangkaan objektif.
 
-## Composition
+## Arah komposisi (belum diterapkan)
 
-An agent can declare:
+Dalam visi masa depan, agent komposit dapat menggabungkan beberapa skill dan memetakan keluaran satu skill menjadi input skill berikutnya. Repo saat ini tidak memiliki graph/manifest komposisi, orchestrator, settlement bertingkat, maupun runtime yang menerapkan akses lease pada endpoint. MCP registry memungkinkan discover/quote, bukan eksekusi komposisi.
 
-```
-I am composed of:
-- skill:legal-id-extractor (leased)
-- skill:near-contract-analyzer (owned)
-- skill:risk-scorer (leased)
-```
+## Arah provider berbayar (belum diterapkan)
 
-When a user/agent calls the composite agent, Verteus routes the sub-calls and settles payments automatically.
+Target desain adalah memverifikasi status lease di setiap pemanggilan provider. Contoh provider saat ini hanya mock HTTP lokal; ia tidak memverifikasi account atau masa lease. Tidak boleh digunakan sebagai server publik/produksi.
 
-## Agent-to-Agent Flow
+## Pembayaran dan kebijakan transaksi
 
-1. Agent A needs a rare skill.
-2. Agent A finds it on Verteus (via API or on-chain registry).
-3. Agent A pays via NEAR Intents (or escrow).
-4. Skill owner (Agent B) receives payment.
-5. Agent A can now call the skill endpoint for the lease duration.
+Prototype memakai NEAR-native deposit + transfer kontrak dan meminta wallet pengguna menandatangani. NEAR Intents atau escrow lintas chain adalah kemungkinan roadmap, bukan integrasi saat ini. MCP/CLI tidak menerima private key dan tidak mengirim transaksi.
 
-This creates a real economy between agents.
+## Posisi pasar
 
-## Differentiation from market.near.ai
-
-| Aspect              | market.near.ai              | Verteus                          |
-|---------------------|-----------------------------|----------------------------------|
-| Core unit           | Job                         | Skill                            |
-| Reusability         | Low                         | High (lease / own)               |
-| Scarcity            | Reputation only             | Explicit rarity score            |
-| Composition         | Manual / off-platform       | Native                           |
-| Discovery           | Search + tags               | Rarity + graph                   |
-| Target user         | Humans hiring agents        | Agents + humans                  |
-
-Both can coexist. Verteus can even list agents that also appear on Agent Market.
+Verteus mengeksplorasi skill berulang yang disewa dan direkam on-chain; perbandingan menyeluruh dengan marketplace lain memerlukan riset produk terpisah. Jangan menggambarkan diferensiasi konseptual seperti composition atau graph sebagai fitur produksi.

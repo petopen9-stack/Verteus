@@ -1,39 +1,45 @@
 # Verteus × NEAR HACKATHON
 
-## Preferred Track
+## Track
 
-**Primary:** Agent Economy  
-**Secondary:** AI Swarms / Autonomous Business
+**Primary: Agent Economy.** Produk memusatkan proses penemuan, quoting, dan lease berbayar skill antar akun/agent melalui kontrak NEAR, dengan persetujuan wallet pengguna.
 
-## One-sentence pitch
+Tidak mengklaim track AI Swarms: belum ada coordinator atau eksekusi multi-agent yang terukur.
 
-Verteus is the rare-skill marketplace where AI agents lease, auction, and compose specialized capabilities, creating a real agent-to-agent economy on NEAR.
+## Pitch satu kalimat
 
-## Submission Checklist (from official HACKATHON.md)
+Verteus memberi agent cara menemukan kemampuan spesialis, memperoleh quote lease dari smart contract NEAR, dan menyiapkan pembayaran yang tetap disetujui pemilik wallet.
 
-- [ ] Public repository (this one)
-- [ ] Working prototype (even if partial)
-- [ ] Demo post on X with video/screenshots, tagging @NEARProtocol #NEARHackathon
-- [ ] Clear README with "do X, see Y" steps for judges
-- [ ] NEAR account for prize payout
+## Checklist submission
 
-## Demo Script (for judges)
+- [x] Repository publik dan berisi instruksi menjalankan frontend, kontrak, dan agent tools.
+- [ ] Demo post X publik dengan video/screenshot; sebut NEAR HACKATHON, tag `@NEARProtocol`, dan `#NEARHackathon`.
+- [ ] Kontrak testnet dan akun demo dapat diakses serta saldo gas cukup.
+- [ ] Form submission diisi sendiri oleh tim, termasuk informasi akun NEAR yang diminta penyelenggara.
+- [x] Lisensi repository ditetapkan oleh pemilik: MIT (`LICENSE`).
 
-1. Open the skill discovery page → see rare skills sorted by rarity.
-2. Select a high-rarity skill → view proof + pricing.
-3. Lease the skill (testnet) → see payment flow.
-4. Call the skill from a simple agent → get result.
-5. (If ready) Compose two skills into a new agent and run it.
+Batas posting yang dicantumkan panduan resmi: **14 November 2026, 23:59 UTC**. Periksa kembali panduan dan form sebelum mengirim.
 
-## What we will ship in 2 weeks
+## Demo script: lakukan X → lihat Y
 
-Minimum viable:
-- Skill registry contract
-- Frontend for listing + discovering skills
-- Lease flow with testnet payment
-- One demo agent that uses a leased skill
+1. Jalankan web app pada kontrak testnet baru yang berisi skill contoh → katalog dan pemilik berasal dari chain.
+2. Sambungkan MyNearWallet → transaksi meminta persetujuan pengguna.
+3. Gunakan CLI atau MCP `search_skills` → agent menemukan skill melalui NEAR RPC read-only.
+4. Gunakan `prepare_lease(skill_id, hours)` → jumlah yoctoNEAR dikutip oleh kontrak dan ditampilkan bersama parameter transaksi; agent tidak menandatangani.
+5. Setujui lease di wallet web → contract memeriksa deposit tepat, mencatat expiry, serta mengirim pembayaran ke owner/platform.
+6. Gunakan `has_valid_lease(skill_id, account)` → baca status lease yang tersimpan.
+7. Tunjukkan auction secara opsional, jika ada lelang testnet aktif.
 
-Stretch:
-- Simple Dutch auction for rare skills
-- Basic composition
-- Agent-to-agent call via Intents
+Jangan melanjutkan klaim provider/consumer end-to-end: provider saat ini hanya mock lokal dan tidak mengautentikasi lease request. Jangan menampilkan rarity sebagai verifikasi independen.
+
+## Yang siap vs roadmap
+
+**Ada di prototipe:** contract registry, lease, fee split, lease quote/expiry, auction Dutch, UI Discover/List/Auctions/Dashboard, CLI/MCP read-only, dan wallet consent.
+
+**Belum ada:** skill execution yang gate-nya diverifikasi on-chain, pembayaran NEAR Intents, TEE/AI Cloud, oracle rarity, buy-out execution, composition runtime, swarm orchestration, deployment testnet publik yang dikelola proyek.
+
+## Referensi
+
+- Checklist dan aturan resmi: <https://nearhackathon.com/HACKATHON.md>
+- Panduan NEAR Builders: <https://nearbuilders.org/build>
+- Track Agent Economy: <https://github.com/nearai/near-hackathon-prompt-examples/blob/main/tracks/07-agents.md>

@@ -1,41 +1,29 @@
-# Verteus — Pitch (30 / 90 / 3-min versions)
+# Verteus — pitch hackathon
 
-## 30-second version
+## 30 detik
 
-Most AI agent marketplaces let you hire an agent for a single job.  
-Verteus treats **skills** as scarce assets. Agents list specialized, hard-to-replicate capabilities, set rarity, and earn by leasing them. Other agents (or humans) discover high-rarity skills, lease them, and compose them into more powerful agents.  
-This creates a real agent-to-agent economy on NEAR — not just a job board.
+Verteus adalah marketplace kemampuan AI di NEAR. Agent dapat menemukan skill yang diterbitkan provider, membaca quote lease langsung dari smart contract, lalu menyiapkan pembayaran yang tetap harus disetujui wallet pemilik. Registry dan lease tercatat on-chain; CLI/MCP memungkinkan agent membaca katalog tanpa memegang private key. Ini adalah primitive untuk Agent Economy, bukan klaim bahwa swarm atau eksekusi provider berbayar sudah otomatis.
 
-## 90-second version
+## 90 detik
 
-**Problem**  
-Current agent markets are job-based. Capabilities are not reusable, scarcity is invisible, and agents cannot improve themselves by buying better sub-skills.
+**Masalah.** Agent memerlukan kemampuan spesialis dari provider lain, tetapi menemukan layanan, melihat harga yang konsisten, dan membayar penyedia tanpa menyerahkan kontrol ke platform pusat merupakan masalah koordinasi.
 
-**Solution**  
-Verteus is a marketplace where the unit of trade is a **Skill**:
-- Clear input/output schema
-- On-chain rarity score
-- Lease or buy-out pricing
-- Endpoint the owning agent controls
+**Solusi.** Verteus merepresentasikan skill sebagai aset beralamat di registry NEAR: owner, metadata, endpoint, skema input/output, harga per jam/hari, rarity yang saat ini dilaporkan sendiri oleh provider, dan penghitung penggunaan. Pengguna atau agent dapat menemukan skill lewat web UI, CLI, atau MCP; smart contract menghitung quote lease, menerima deposit tepat, membagi fee, dan mencatat masa akses. Untuk skill rarity ≥80, pemilik juga dapat membuat Dutch auction.
 
-An agent that has a rare Indonesian-legal + NEAR-mapping skill can list it once and earn every time another agent leases it. A swarm builder can lease three rare skills and instantly become a composite specialist.
+**Kontrol pengguna.** CLI/MCP hanya membaca chain dan menyiapkan parameter transaksi. Tidak ada private key, auto-signing, atau auto-submit. Pemilik menyetujui pembayaran melalui wallet NEAR.
 
-**Why NEAR**  
-- Fast, cheap transactions for micro-leases  
-- NEAR Intents for agent-to-agent settlement  
-- Optional TEE / NEAR AI Cloud for private skills  
-- Aligns with Agent Economy and AI Swarms tracks
+**Mengapa NEAR.** Account dan smart contract NEAR memberi identitas/record pembayaran publik yang dapat dicek agent. Jalur ini sederhana untuk demo testnet dan tidak menuntut layanan server menyimpan dana pengguna.
 
-**Status**  
-Working skill-registry contract, frontend for discovery & listing, example provider/consumer agents, clear path to auctions and composition.
+**Status yang dapat didemokan.** Registry contract (uji host dan build Wasm), frontend Next.js, transaksi wallet, agen CLI/MCP read-only, quote lease, transfer harga lease, lease expiry, dan auction. Provider contoh bersifat lokal/mock; ia belum melakukan inference produksi atau menegakkan akses dengan memverifikasi lease.
 
-## 3-minute version (for demo)
+## Demo 3 menit — gunakan hanya setelah testnet disiapkan
 
-1. **Hook** — "What if the best AI capabilities were scarce assets instead of free prompts?"
-2. **Problem** — Job marketplaces don't create lasting value or specialization incentives.
-3. **Show Discover page** — High-rarity skills sorted, purple badges for 90+.
-4. **Show List flow** — Anyone can register a skill with rarity + pricing.
-5. **Show contract** — `register_skill` → `lease_skill` → funds move, lease recorded.
-6. **Show agents** — Provider serves the skill, consumer leases & calls it.
-7. **Vision** — Composition + auctions + Intents = autonomous skill economy.
-8. **Ask** — Looking for feedback, collaborators, and to ship the full auction + composition layer.
+1. **Masalah:** perlihatkan skill spesialis yang harga dan pemiliknya dapat diverifikasi di chain.
+2. **Discover:** buka frontend untuk melihat katalog aktif; sebutkan skor rarity diinput owner dan belum diverifikasi oracle.
+3. **Agent path:** jalankan CLI/MCP `search_skills` untuk mendapatkan skill on-chain tanpa kunci.
+4. **Quote:** jalankan `prepare_lease`; tunjukkan durasi dan jumlah yoctoNEAR hasil view kontrak.
+5. **Consent:** buka web app, sambungkan MyNearWallet, lalu konfirmasi `lease_skill` di wallet testnet.
+6. **Verification:** cek `has_valid_lease` dan hitung transaksi pada explorer NEAR.
+7. **Close:** jelaskan nilai Agent Economy hari ini dan roadmap terpisah untuk provider berautentikasi, composition, verified reputation, dan settlement lintas layanan.
+
+Jangan mendemokan `call skill endpoint` sebagai hasil lease terjamin: contoh provider belum mengikat request ke identitas/account lessee dan tidak memeriksa lease on-chain. Jangan mengklaim pembayaran melalui NEAR Intents, TEE, atau swarm multi-agent sudah diimplementasikan.

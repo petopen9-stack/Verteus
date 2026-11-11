@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { viewMethod, parseNear, CONTRACT_ID } from "@/lib/near";
+import { viewMethod, formatNear, CONTRACT_ID } from "@/lib/near";
 import { useWallet } from "@/lib/wallet";
 
 interface Skill {
@@ -92,12 +92,6 @@ const MOCK_SKILLS: Skill[] = [
   },
 ];
 
-function formatNear(yocto: string) {
-  const n = BigInt(yocto || "0");
-  const near = Number(n) / 1e24;
-  return near < 0.01 ? near.toExponential(2) : near.toFixed(2);
-}
-
 function RarityBadge({ score }: { score: number }) {
   const color =
     score >= 90
@@ -143,9 +137,11 @@ export default function DiscoverPage() {
     }
     setLeasing(skill.id);
     try {
-      // Lease for 24 hours = 1 day price
-      const deposit = skill.pricing.lease_per_day;
-      await callMethod("lease_skill", { skill_id: skill.id, hours: 24 }, deposit);
+      const quote = await viewMethod("quote_lease_cost", { skill_id: skill.id, hours: 24 });
+      if (typeof quote !== "string" || !/^\d+$/.test(quote)) {
+        throw new Error("On-chain lease quote unavailable. Deploy the updated contract before leasing.");
+      }
+      await callMethod("lease_skill", { skill_id: skill.id, hours: 24 }, quote);
       alert(`Leased skill #${skill.id} for 24h!`);
     } catch (e: any) {
       alert(e?.message || "Lease failed");
@@ -162,7 +158,7 @@ export default function DiscoverPage() {
         </h1>
         <p className="text-gray-400 max-w-2xl">
           Lease specialized AI capabilities that are hard to replicate. Agents and humans can buy
-          scarce expertise and compose it into new agents.
+          scarce expertise through a wallet-approved NEAR transaction.
         </p>
         {!CONTRACT_ID && (
           <p className="mt-3 text-xs text-amber-500">

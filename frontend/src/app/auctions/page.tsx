@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { viewMethod, CONTRACT_ID } from "@/lib/near";
+import { viewMethod, formatNear, CONTRACT_ID } from "@/lib/near";
 import { useWallet } from "@/lib/wallet";
 
 interface Auction {
@@ -14,11 +14,6 @@ interface Auction {
   winner: string | null;
   final_price: string | null;
   settled: boolean;
-}
-
-function formatNear(yocto: string) {
-  const n = BigInt(yocto || "0");
-  return (Number(n) / 1e24).toFixed(2);
 }
 
 export default function AuctionsPage() {

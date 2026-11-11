@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "provider": "tsx example-skill-provider/index.ts",
-    "consumer": "tsx example-skill-consumer/index.ts"
+    "consumer": "tsx example-skill-consumer/index.ts",
+    "cli": "tsx cli.ts",
+    "mcp": "tsx mcp.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "tsx": "^4.7.0",
     "typescript": "^5"
   }

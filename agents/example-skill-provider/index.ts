@@ -1,15 +1,15 @@
 /**
  * Example Skill Provider Agent
  *
- * This agent:
- * 1. Registers a rare skill on the Verteus skill-registry contract
- * 2. Listens for lease-authorized requests
- * 3. Executes the skill and returns the result
+ * Local mock only. It neither registers a skill nor checks on-chain leases;
+ * its fixed sample response is not a production skill execution service.
  *
  * Run: npx tsx index.ts
  */
 
-const SKILL_ENDPOINT = process.env.SKILL_ENDPOINT || "http://localhost:8787";
+const SKILL_ENDPOINT = process.env.SKILL_ENDPOINT || "http://127.0.0.1:8787";
+const MAX_BODY_BYTES = 1_000_000;
+const MAX_TEXT_CHARS = 100_000;
 
 // Simulated rare skill: Indonesian legal clause extractor
 async function runSkill(input: { text: string }) {
@@ -42,19 +42,40 @@ import { createServer } from "http";
 const server = createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/skill") {
     let body = "";
-    for await (const chunk of req) body += chunk;
+    let bodyBytes = 0;
+    for await (const chunk of req) {
+      const part = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+      bodyBytes += Buffer.byteLength(part, "utf8");
+      if (bodyBytes > MAX_BODY_BYTES) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        req.resume();
+        return;
+      }
+      body += part;
+    }
 
     try {
-      const input = JSON.parse(body);
+      const input: unknown = JSON.parse(body);
+      if (!input || typeof input !== "object" || Array.isArray(input) || typeof (input as { text?: unknown }).text !== "string") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Expected JSON object with a text string" }));
+        return;
+      }
+      if ((input as { text: string }).text.length > MAX_TEXT_CHARS) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Text input too large" }));
+        return;
+      }
       // TODO: verify the caller has a valid on-chain lease
       // by calling has_valid_lease on the skill-registry contract
 
-      const result = await runSkill(input);
+      const result = await runSkill(input as { text: string });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));
-    } catch (e: any) {
+    } catch {
       res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: e.message }));
+      res.end(JSON.stringify({ error: "Invalid JSON request" }));
     }
   } else if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200);
@@ -66,8 +87,9 @@ const server = createServer(async (req, res) => {
 });
 
 const PORT = Number(process.env.PORT) || 8787;
-server.listen(PORT, () => {
-  console.log(`Skill provider listening on :${PORT}`);
+const HOST = process.env.HOST || "127.0.0.1";
+server.listen(PORT, HOST, () => {
+  console.log(`Local demo provider listening on ${HOST}:${PORT}`);
   console.log(`Endpoint: ${SKILL_ENDPOINT}/skill`);
-  console.log(`Register this endpoint when calling register_skill on the contract.`);
+  console.log("Local demonstration only: lease authorization is not enforced; do not expose this server publicly.");
 });

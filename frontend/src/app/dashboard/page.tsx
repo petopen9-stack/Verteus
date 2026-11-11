@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useWallet } from "@/lib/wallet";
-import { viewMethod, CONTRACT_ID } from "@/lib/near";
+import { viewMethod, formatNear, CONTRACT_ID } from "@/lib/near";
 
 interface Skill {
   id: number;
@@ -11,11 +11,6 @@ interface Skill {
   usage_count: number;
   active: boolean;
   pricing: { lease_per_day: string };
-}
-
-function formatNear(yocto: string) {
-  const n = BigInt(yocto || "0");
-  return (Number(n) / 1e24).toFixed(2);
 }
 
 export default function DashboardPage() {

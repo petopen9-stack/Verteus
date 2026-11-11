@@ -1,58 +1,51 @@
-# Verteus Demo Script (for judges)
+# Demo Verteus untuk NEAR HACKATHON
 
-**Track:** Agent Economy (primary) / AI Swarms (secondary)
+**Track utama:** Agent Economy (`agents`). Ini bukan demo swarm multi-agent. Prototype menggunakan kontrak NEAR sendiri; NEAR Intents tidak diintegrasikan dan bukan syarat wajib untuk submission.
 
-## One-liner
+## Pesan satu kalimat
 
-Verteus is the rare-skill marketplace where AI agents lease, auction and compose specialized capabilities, creating a real agent-to-agent economy on NEAR.
+Verteus memberi agent cara menemukan kemampuan spesialis, memperoleh quote sewa on-chain, dan menyiapkan pembayaran NEAR yang tetap memerlukan persetujuan wallet pemilik.
 
-## Do X, see Y (judge checklist)
+## Urutan demo: lakukan X → lihat Y
 
-### 1. Discover rare skills
-- Open the frontend (or view the mock data on the Discover page)
-- See skills sorted by rarity score
-- Filter by minimum rarity
-- **Expected:** High-rarity skills (90+) appear first with purple badges
+1. Jalankan kontrak testnet yang sudah berisi skill demo, lalu buka frontend dengan `NEXT_PUBLIC_CONTRACT_ID` dan `NEXT_PUBLIC_NETWORK=testnet`. **Lihat:** data skill berasal dari kontrak, bukan daftar mock.
+2. Hubungkan MyNearWallet. **Lihat:** aplikasi hanya meminta transaksi wallet; private key tidak dikirim ke aplikasi.
+3. Jalankan `cd agents && npm install`, lalu `VERTEUS_NETWORK=testnet VERTEUS_CONTRACT_ID=<contract.testnet> npm run cli -- search_skills 80 10`. **Lihat:** CLI membaca skill aktif melalui NEAR RPC.
+4. Jalankan `npm run cli -- prepare_lease <skill_id> 24`. **Lihat:** server mengambil `quote_lease_cost` dari kontrak dan mengembalikan jumlah yoctoNEAR tepat serta method/arguments untuk `lease_skill`. Tidak ada transaksi yang ditandatangani/dikirim oleh CLI atau MCP.
+5. Minta agent yang terhubung ke MCP menggunakan `search_skills`, `get_skill`, dan `prepare_lease`. **Lihat:** agent dapat membaca katalog dan menyusun permintaan transaksi tanpa memiliki private key.
+6. Kembali ke web app dan setujui lease melalui wallet. **Lihat:** lease tersimpan di chain, owner dan platform menerima bagian harga, `usage_count` bertambah, serta tool `has_valid_lease` mengembalikan status lease.
+7. Opsional, jalankan contoh provider/consumer lokal. **Lihat:** provider contoh mengembalikan hasil JSON statis untuk input demonstrasi; ini bukan backend produksi dan tidak boleh diekspos ke internet.
 
-### 2. Inspect a skill
-- Click / view any skill card
-- See: name, description, tags, owner, usage count, price
-- **Expected:** Clear differentiation between common and rare skills
+### Jalankan MCP
 
-### 3. Lease flow (contract)
-- Call `lease_skill` on the skill-registry contract with attached NEAR
-- **Expected:** Lease record created, funds transferred to skill owner (minus platform fee), usage_count incremented
-
-### 4. Agent-to-agent call
-- Start the example skill provider (`npm run provider` in `/agents`)
-- Run the example skill consumer (`npm run consumer`)
-- **Expected:** Consumer receives structured skill output (clauses + NEAR mapping)
-
-### 5. Composition idea (stretch)
-- Show how two leased skills can be chained by a third agent
-- **Expected:** Narrative or simple script demonstrating multi-skill workflow
-
-## Why this matters for NEAR
-
-- Creates a new economic primitive: **skill as asset**
-- Agents can earn recurring revenue instead of one-off jobs
-- Composition enables organic AI swarms without central coordination
-- Rarity + on-chain ownership opens secondary markets and auctions
-- Works with NEAR Intents for agent-to-agent settlement
-
-## Repo structure for judges
-
-```
-contracts/skill-registry/   ← Rust contract (register, lease, rarity views)
-frontend/                   ← Next.js UI (Discover, List, Dashboard)
-agents/                     ← Example provider + consumer agents
-docs/                       ← Concept, hackathon notes, this demo script
+```bash
+cd agents
+npm install
+VERTEUS_NETWORK=testnet VERTEUS_CONTRACT_ID=<contract.testnet> npm run mcp
 ```
 
-## Next steps after demo
+Atur client MCP desktop sesuai contoh di [`agents/README.md`](../agents/README.md). Gunakan deployment testnet milik tim, bukan account default contoh jika kontrak itu tidak ada.
 
-1. Deploy contract to testnet
-2. Wire frontend to real contract + wallet selector
-3. Add Dutch auction for rarity ≥ 90 skills
-4. Integrate NEAR Intents for cross-agent payments
-5. Add TEE attestation field for private skills
+## Pengelolaan kunci dan batas transaksi
+
+Wallet tetap milik pengguna. Web app meminta persetujuan wallet untuk method kontrak. CLI dan MCP hanya membaca state/quote dan menghasilkan informasi transaksi untuk diperiksa manusia. Tidak ada autonomous signing, pemegang kunci server, atau transaksi mainnet otomatis. Periksa network, contract ID, skill ID, durasi, dan deposit sebelum menandatangani.
+
+## Batas yang harus disampaikan secara jujur
+
+- Rarity adalah skor yang dimasukkan pemilik, bukan attestation atau oracle.
+- Contoh provider belum memverifikasi lease/pemanggil dan hanya untuk lokal.
+- Contoh consumer masih demo; jangan menyebutnya agent komersial end-to-end.
+- Belum ada pembayaran NEAR Intents, NEAR AI Cloud/TEE, maupun simulasi swarm.
+- Kontrak dengan perubahan layout state harus dideploy sebagai instance baru; state lama tidak dimigrasikan.
+
+## Draf post X — tim yang membangun harus memposting sendiri
+
+> AI agents need specialist skills, but finding a provider and knowing the exact price should not require trusting a central broker. Verteus lets agents discover skills and prepare a lease quote directly from a NEAR contract, while the owner keeps control of the wallet approval. Built for NEAR HACKATHON. Demo: [link] · Code: https://github.com/petopen9-stack/Verteus @NEARProtocol #NEARHackathon
+
+Lampirkan video singkat yang memperlihatkan satu alur lengkap: agent MCP mencari skill → mengambil quote → pemilik menyetujui lease di wallet → lease muncul/terverifikasi on-chain. Jangan unggah draf sebelum video dan repository publik siap.
+
+## Sumber dan referensi
+
+- Panduan hackathon: <https://nearhackathon.com/HACKATHON.md>
+- Panduan ekosistem NEAR: <https://nearbuilders.org/build>
+- Prompt track Agent Economy: <https://github.com/nearai/near-hackathon-prompt-examples/blob/main/tracks/07-agents.md>

@@ -39,7 +39,7 @@ register() {
       \"endpoint\": \"$endpoint\"
     }" \
     prepaid-gas '30.0 Tgas' \
-    attached-deposit '0 NEAR' \
+    attached-deposit '1 NEAR' \
     network-config "$NETWORK" \
     sign-as "$SIGNER" \
     sign-with-keychain \
@@ -50,39 +50,39 @@ echo "Registering demo skills..."
 
 # 1 NEAR = 10^24 yocto
 register \
-  "Indonesian Legal Clause Extractor" \
-  "Extracts and maps Indonesian legal clauses to NEAR smart contract patterns" \
-  '["legal","indonesia","near"]' \
+  "Demo: Indonesian Legal Clause Outline" \
+  "Synthetic listing for UI and lease tests; no live legal model or legal advice is attached." \
+  '["demo","legal","synthetic"]' \
   92 \
   "1000000000000000000000000" \
   "20000000000000000000000000" \
-  "http://localhost:8787/skill"
+  "https://example.com/verteus-demo/legal"
 
 register \
-  "On-chain Risk Scorer (TEE)" \
-  "Scores wallet and contract risk using private heuristics inside a TEE" \
-  '["security","tee","risk"]' \
+  "Demo: Simulated Wallet Risk Checklist" \
+  "Example listing only; not an oracle, live risk score, or TEE-backed service." \
+  '["demo","risk","simulated"]' \
   88 \
   "1500000000000000000000000" \
   "30000000000000000000000000" \
-  "https://risk-agent.example.com/skill"
+  "https://example.com/verteus-demo/risk"
 
 register \
-  "Cultural Context Translator ID-EN" \
-  "Translates with deep Indonesian cultural and regional slang context" \
-  '["translation","culture","indonesia"]' \
+  "Demo: Bahasa Translation Listing" \
+  "Example listing only; no live translation service is connected." \
+  '["demo","translation","indonesia"]' \
   79 \
   "500000000000000000000000" \
   "10000000000000000000000000" \
-  "https://bahasa-agent.example.com/skill"
+  "https://example.com/verteus-demo/translation"
 
 register \
-  "NEAR Intent Strategy Composer" \
-  "Composes multi-step NEAR Intent strategies for complex cross-chain outcomes" \
-  '["intents","defi","strategy"]' \
+  "Demo: Skill Workflow Concept" \
+  "Example listing only; it does not execute skill composition or use NEAR Intents." \
+  '["demo","workflow","concept"]' \
   95 \
   "2000000000000000000000000" \
   "40000000000000000000000000" \
-  "https://intent-master.example.com/skill"
+  "https://example.com/verteus-demo/workflow"
 
 echo "Done."

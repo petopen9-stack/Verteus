@@ -81,7 +81,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const wallet = await selector.wallet();
       return wallet.signAndSendTransaction({
         receiverId: CONTRACT_ID,
-        actions: [
+        actions: ([
           {
             type: "FunctionCall",
             params: {
@@ -91,7 +91,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
               deposit,
             },
           },
-        ],
+        ] as any),
       });
     },
     [selector]
